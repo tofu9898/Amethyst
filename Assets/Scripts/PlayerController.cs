@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float walkSpeed = 1;
 
     [SerializeField] private float jumpForce = 30;
-    private int jumpBufferCounter;
+    private int jumpBufferCounter = 0;
     [SerializeField] private int jumpBufferFrames;
 
     [Header("Ground Check Settings")]
@@ -38,7 +38,7 @@ public class PlayerController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        //pState = GetComponent<PlayerStateList>();
+        pState = GetComponent<PlayerStateList>();
 
         rb = GetComponent<Rigidbody2D>();
 
@@ -49,10 +49,12 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         GetInputs();
-        //UpdateJumpingVariables();
+        UpdateJumpingVariables();
         Flip();
         Move();
         Jump();
+
+        Debug.Log("Grounded: " + Grounded());
     }
 
     void GetInputs()
@@ -98,22 +100,26 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonUp("Jump") && rb.linearVelocity.y > 0)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
-
             pState.jumping = false;
         }
 
-        //if (pState.jumping)
+        // Check jump buffer AND grounded status
+        if (!pState.jumping && jumpBufferCounter > 0 && Grounded())
         {
-            if (Input.GetButtonDown("Jump") && Grounded() )
-            {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce);
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            pState.jumping = true;
+            jumpBufferCounter = 0;  // Reset buffer after using it
+        }
 
-                pState.jumping = true;
-            }
+        // Reset jumping when grounded
+        if (Grounded() && pState.jumping)
+        {
+            pState.jumping = false;
         }
 
         anim.SetBool("Jumping", !Grounded());
     }
+
 
     void UpdateJumpingVariables()
     {
@@ -124,11 +130,12 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetButtonDown("Jump"))
         {
-            jumpBufferCounter = jumpBufferFrames;  
+            jumpBufferCounter = jumpBufferFrames;
         }
-        else
+        else if (jumpBufferCounter > 0)
         {
             jumpBufferCounter--;
         }
     }
+
 }
