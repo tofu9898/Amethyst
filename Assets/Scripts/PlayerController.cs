@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float walkSpeed = 1;
     [Space(5)]
 
-
+    [Header("Vertical Movement Options")]
     [SerializeField] private float jumpForce = 30;
     private int jumpBufferCounter = 0;
     [SerializeField] private int jumpBufferFrames;
@@ -29,15 +29,21 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashCooldown;
     [Space(5)]
 
+    [Header("Attack Settings")]
+    bool attack = false;
+    float timeBetweenAttack, timeSinceAttack;
+    [SerializeField] Transform SideAttackTransform, UpAttackTransform, DownAttackTransform;
+    [SerializeField] Vector2 SideAttackArea, UpAttackArea, DownAttackArea;
+    [SerializeField] LayerMask attackableLayer;
+    [Space(5)]
 
     PlayerStateList pState;
     private Rigidbody2D rb;
-    private float xAxis;
+    private float xAxis, yAxis;
     private float gravity;
     Animator anim;
     private bool canDash;
     private bool dashed;
-
 
     public static PlayerController Instance;
 
@@ -66,6 +72,15 @@ public class PlayerController : MonoBehaviour
         canDash = true;
     }
 
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(SideAttackTransform.position, SideAttackArea);
+        Gizmos.DrawWireCube(UpAttackTransform.position, UpAttackArea);
+        Gizmos.DrawWireCube(DownAttackTransform.position, DownAttackArea);
+
+    }
     // Update is called once per frame
     void Update()
     {
@@ -77,18 +92,19 @@ public class PlayerController : MonoBehaviour
         Move();
         Jump();
         StartDash();
+        Attack();
 
         if (Input.GetButtonDown("Dash"))
         {
-            Debug.Log("Dash button pressed!");
+            //Debug.Log("Dash button pressed!");
         }
-
-        Debug.Log("Grounded: " + Grounded());
     }
 
     void GetInputs()
     {
         xAxis = Input.GetAxisRaw("Horizontal");
+        yAxis = Input.GetAxisRaw("Vertical");
+        attack = Input.GetMouseButtonDown(0);
     }
 
     void Flip()
@@ -112,11 +128,11 @@ public class PlayerController : MonoBehaviour
 
     void StartDash()
     {
-        Debug.Log("StartDash() called!"); // Debug check
+        //Debug.Log("StartDash() called!"); // Debug check
 
         if (Input.GetButtonDown("Dash") && canDash && !pState.dashing)
         {
-            Debug.Log("Dash triggered!"); // Debug check
+            //Debug.Log("Dash triggered!"); // Debug check
             StartCoroutine(Dash());
         }
 
@@ -128,7 +144,6 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator Dash()
     {
-        Debug.Log("DashingStart");
         canDash = false;
         dashed = true;
         pState.dashing = true;
@@ -140,9 +155,40 @@ public class PlayerController : MonoBehaviour
         pState.dashing = false;
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
-
     }
 
+    void Attack()
+    {
+        timeSinceAttack += Time.deltaTime;
+        if (attack && timeSinceAttack >= timeBetweenAttack)
+        {
+            timeSinceAttack = 0;
+            anim.SetTrigger("Attacking");
+
+            if (yAxis <= 0 && Grounded())
+            {
+                Hit(SideAttackTransform, SideAttackArea);
+            }
+            else if (yAxis > 0)
+            {
+                Hit(UpAttackTransform, UpAttackArea);
+            }
+            else if (yAxis < 0 && !Grounded())
+            {
+                Hit(DownAttackTransform, DownAttackArea);   
+            }
+        }
+    }
+
+    private void Hit(Transform _attackTransform, Vector2 _attackArea)
+    {
+        Collider2D[] objectsToHit = Physics2D.OverlapBoxAll(_attackTransform.position, _attackArea, 0, attackableLayer);
+
+        if (objectsToHit.Length > 0)
+        {
+            Debug.Log("Succesfully assaulted");
+        }
+    }
     public bool Grounded()
     {
         if (Physics2D.Raycast(groundCheckPoint.position, Vector2.down, groundCheckY, whatIsGround)
