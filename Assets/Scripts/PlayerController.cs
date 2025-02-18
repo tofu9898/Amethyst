@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Timeline;
 
 public class PlayerController : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class PlayerController : MonoBehaviour
     private int jumpBufferCounter = 0;
     [SerializeField] private int jumpBufferFrames;
     [Space(5)]
-    
+
 
     [Header("Ground Check Settings")]
     [SerializeField] private Transform groundCheckPoint;
@@ -21,7 +22,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundCheckX = 0.5f;
     [SerializeField] private LayerMask whatIsGround;
     [Space(5)]
-    
+
 
     [Header("Dash Settings")]
     [SerializeField] private float dashSpeed;
@@ -35,9 +36,25 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Transform SideAttackTransform, UpAttackTransform, DownAttackTransform;
     [SerializeField] Vector2 SideAttackArea, UpAttackArea, DownAttackArea;
     [SerializeField] LayerMask attackableLayer;
+    [SerializeField] float damage;
     [Space(5)]
 
-    PlayerStateList pState;
+    [Header("Recoil")]
+    [SerializeField] int recoilXSteps = 5;
+    [SerializeField] int recoilYSteps = 5;
+    [SerializeField] float recoilXSpeed = 100;
+    [SerializeField] float recoilYSpeed = 100;
+    int stepsXRecoiled, stepsYRecoiled;
+    [SerializeField] private float recoilYMultiplier = 1.0f;
+    [Space(5)]
+
+    [Header("Health Settings")]
+    public int health;
+    public int maxHealth;
+    [Space(5)]
+
+
+    [HideInInspector] public PlayerStateList pState;
     private Rigidbody2D rb;
     private float xAxis, yAxis;
     private float gravity;
@@ -57,6 +74,8 @@ public class PlayerController : MonoBehaviour
         {
             Instance = this;
         }
+
+        health = maxHealth;
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -93,6 +112,7 @@ public class PlayerController : MonoBehaviour
         Jump();
         StartDash();
         Attack();
+        Recoil();
 
         if (Input.GetButtonDown("Dash"))
         {
@@ -112,10 +132,12 @@ public class PlayerController : MonoBehaviour
         if (xAxis < 0)
         {
             transform.localScale = new Vector2(-3, transform.localScale.y);
+            pState.lookingRight = false;
         }
         else if (xAxis > 0)
         {
             transform.localScale = new Vector2(3, transform.localScale.y);
+            pState.lookingRight = true;
         }
 
     }
@@ -159,36 +181,132 @@ public class PlayerController : MonoBehaviour
 
     void Attack()
     {
+        Debug.Log("Attack triggered: " + yAxis);
+
         timeSinceAttack += Time.deltaTime;
         if (attack && timeSinceAttack >= timeBetweenAttack)
         {
             timeSinceAttack = 0;
             anim.SetTrigger("Attacking");
 
-            if (yAxis <= 0 && Grounded())
+            // If pressing UP, use UpAttack
+            if (yAxis > 0)
             {
-                Hit(SideAttackTransform, SideAttackArea);
+                Hit(UpAttackTransform, UpAttackArea, ref pState.recoilingX, recoilXSpeed);
             }
-            else if (yAxis > 0)
-            {
-                Hit(UpAttackTransform, UpAttackArea);
-            }
+            // If pressing DOWN while NOT grounded, use DownAttack
             else if (yAxis < 0 && !Grounded())
             {
-                Hit(DownAttackTransform, DownAttackArea);   
+                Hit(DownAttackTransform, DownAttackArea, ref pState.recoilingY, recoilYSpeed);
             }
+            // Default: Use Side Attack (even when grounded)
+            else
+            {
+                Hit(SideAttackTransform, SideAttackArea, ref pState.recoilingX, recoilXSpeed);
+            }
+
         }
     }
 
-    private void Hit(Transform _attackTransform, Vector2 _attackArea)
+    private void Hit(Transform _attackTransform, Vector2 _attackArea, ref bool _recoilDir, float _recoilStrength)
     {
         Collider2D[] objectsToHit = Physics2D.OverlapBoxAll(_attackTransform.position, _attackArea, 0, attackableLayer);
 
         if (objectsToHit.Length > 0)
         {
-            Debug.Log("Succesfully assaulted");
+            Debug.Log("Succesful hit");
+            _recoilDir = true;
+        }
+
+        for (int i = 0; i < objectsToHit.Length; i++)
+        {
+            if (objectsToHit[i].GetComponent<Enemy>() != null)
+            {
+                objectsToHit[i].GetComponent<Enemy>().EnemyHit(damage,
+                    (transform.position - objectsToHit[i].transform.position).normalized, _recoilStrength);
+            }
         }
     }
+
+    void Recoil()
+    {
+        if (pState.recoilingX)
+        {
+            float xRecoil = pState.lookingRight ? -recoilXSpeed : recoilXSpeed;
+            rb.linearVelocity = new Vector2(xRecoil, rb.linearVelocity.y); // Keep Y velocity unchanged!
+        }
+
+
+        if (pState.recoilingY)
+        {
+            rb.gravityScale = 0;
+            float yRecoil = recoilYSpeed * recoilYMultiplier;
+
+            // Apply smaller recoil if grounded to prevent excessive jumps
+            if (Grounded()) yRecoil *= 0.3f;
+
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, yRecoil);
+        }
+
+        else
+        {
+            rb.gravityScale = gravity;
+        }
+
+        if (pState.recoilingX && stepsXRecoiled < recoilXSteps)
+        {
+            stepsXRecoiled++;
+        }
+        else if (stepsXRecoiled >= recoilXSteps)
+        {
+            StopRecoilX();
+        }
+
+        if (pState.recoilingY && stepsYRecoiled < recoilYSteps)
+        {
+            stepsYRecoiled++;
+        }
+        else
+        {
+            StopRecoilY();
+        }
+
+        if(Grounded())
+        {
+            StopRecoilY();
+        }
+    }
+
+    void StopRecoilX()
+    {
+        stepsXRecoiled = 0;
+        pState.recoilingX = false;  
+    }
+
+    void StopRecoilY()
+    {
+        stepsYRecoiled = 0;
+        pState.recoilingY = false;
+    }
+
+    public void TakeDamage(float _damage)
+    {
+        health -= Mathf.RoundToInt(_damage);
+        StartCoroutine(StopTakingDamage());
+    }
+    IEnumerator StopTakingDamage()
+    {
+        pState.invincible = true;
+        anim.SetTrigger("TakeDamage");
+        ClampHealth();
+        yield return new WaitForSeconds(1f);
+        pState.invincible = false;
+    }
+    void ClampHealth()
+    {
+        health = Mathf.Clamp(health, 0, maxHealth);
+    }
+
     public bool Grounded()
     {
         if (Physics2D.Raycast(groundCheckPoint.position, Vector2.down, groundCheckY, whatIsGround)
