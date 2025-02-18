@@ -2,33 +2,28 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-
-    [SerializeField] protected float health;
+    [SerializeField] protected float health = 25f;
     [SerializeField] protected float recoilLength;
     [SerializeField] protected float recoilFactor;
     [SerializeField] protected bool isRecoiling = false;
-
     [SerializeField] protected PlayerController player;
     [SerializeField] protected float speed;
-
     [SerializeField] protected float damage;
-
 
     protected float recoilTimer;
     protected Rigidbody2D rb;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    protected virtual void Start()
-    {
-
-    }
 
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         player = PlayerController.Instance;
+        if (health <= 0)
+        {
+            Debug.LogWarning(gameObject.name + " started with 0 health! Setting default health to 25.");
+            health = 25f;
+        }
     }
 
-    // Update is called once per frame
     protected virtual void Update()
     {
         if (health <= 0)
@@ -49,22 +44,26 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public virtual void EnemyHit (float _damageDone, Vector2 _hitDirection, float _hitForce)
+    public virtual void EnemyHit(float _damageDone, Vector2 _hitDirection, float _hitForce)
     {
         health -= _damageDone;
-        if(!isRecoiling)
+        if (!isRecoiling)
         {
             rb.AddForce(-_hitForce * recoilFactor * _hitDirection);
         }
     }
 
-    protected void OnTriggerStay2D(Collider2D _other)
+    // Use OnTriggerEnter2D to apply damage once on collision entry.
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (_other.CompareTag("Player") && !PlayerController.Instance.pState.invincible)
+        // Check if the colliding object is the player and that the player is not invincible.
+        if (collision.gameObject.CompareTag("Player") && !PlayerController.Instance.pState.invincible)
         {
+            Debug.Log("Enemy collided with Player via collision.");
             Attack();
         }
     }
+
 
     protected virtual void Attack()
     {

@@ -181,7 +181,7 @@ public class PlayerController : MonoBehaviour
 
     void Attack()
     {
-        Debug.Log("Attack triggered: " + yAxis);
+        //Debug.Log("Attack triggered: " + yAxis);
 
         timeSinceAttack += Time.deltaTime;
         if (attack && timeSinceAttack >= timeBetweenAttack)
@@ -291,15 +291,16 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(float _damage)
     {
+        Debug.Log("Player Hit! Health: " + health);
         health -= Mathf.RoundToInt(_damage);
         StartCoroutine(StopTakingDamage());
     }
     IEnumerator StopTakingDamage()
     {
-        pState.invincible = true;
-        anim.SetTrigger("TakeDamage");
+        pState.invincible = true;  // Prevent taking damage again during invincibility window
+        anim.SetTrigger("TakeDamage");  // Ensure this matches your Animator trigger
         ClampHealth();
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(1f);  // Invincibility time to avoid multiple hits in short time
         pState.invincible = false;
     }
     void ClampHealth()

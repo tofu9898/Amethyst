@@ -853,6 +853,8 @@ GameObject:
   - component: {fileID: 544396473}
   - component: {fileID: 544396477}
   - component: {fileID: 544396478}
+  - component: {fileID: 544396479}
+  - component: {fileID: 544396480}
   m_Layer: 6
   m_Name: Enemy1
   m_TagString: Untagged
@@ -997,7 +999,7 @@ Transform:
   m_GameObject: {fileID: 544396471}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.74, y: -2.84, z: 0}
+  m_LocalPosition: {x: 3.657, y: -2.84, z: 0}
   m_LocalScale: {x: 0.43048656, y: 1.1172152, z: 0.91515}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1015,7 +1017,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ac7bb56d62cf904db94c7a8cd868201, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  health: 15
+  health: 25
   recoilLength: 1.5
   recoilFactor: 10
   isRecoiling: 0
@@ -1068,6 +1070,62 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!70 &544396479
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544396471}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Size: {x: 0.99999994, y: 1}
+  m_Direction: 0
+--- !u!114 &544396480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544396471}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f57f13e12815d44394b23a112c1c3fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  health: 0
+  recoilLength: 0
+  recoilFactor: 0
+  isRecoiling: 0
+  player: {fileID: 0}
+  speed: 0
+  damage: 0
 --- !u!1 &952724776
 GameObject:
   m_ObjectHideFlags: 0
